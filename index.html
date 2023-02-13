@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>My first three.js app</title>
+		<style>
+			body { margin: 0; }
+		</style>
+	</head>
+	<body>
+		<script src="js/three.js"></script>
+		<script>
+            // Create base Threejs objects (Scene, Camera, renderer) 
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            document.body.appendChild( renderer.domElement );
+
+            // Create basic 3D green cube
+            const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+            const material = new THREE.MeshBasicMaterial( { color: 0x00aa00 } );
+
+            // Set our maze map
+            const map = [
+                [0,0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,1,1,0,0,0,0],
+                [0,0,0,0,0,1,0,0,0,0],
+                [1,1,1,1,0,1,0,0,0,0],
+                [0,0,0,1,0,1,0,0,0,0],
+                [0,0,0,1,0,1,1,1,1,1],
+                [0,0,0,1,0,0,0,0,0,0],
+                [0,0,0,1,1,1,1,1,1,1],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+            ]
+            for (let y = 0; y < map.length; ++y) {
+                for (let x = 0; x < map[y].length; ++x) {
+                    if (map[y][x] == 1) {
+                        // Create 3D cube Mesh and adding them to the scene
+                        const cube = new THREE.Mesh( geometry, material );
+                        scene.add( cube );
+                        // Setting cube position based on map position
+                        cube.position.x = x;
+                        // Y position inverted because positive y goes up on threejs and goes down on out map
+                        cube.position.y = -y;
+                    }
+                }
+            }
+
+            camera.position.z = 10;
+            camera.position.x = 5;
+            camera.position.y = -10;
+            // Rotation x positive looks up, negative looks down, y positive looks right, negative looks left, and z rotates
+            camera.rotation.x = 0.5
+
+            // function to render our scene and camera
+            function animate() {
+                requestAnimationFrame( animate );
+                renderer.render( scene, camera );
+            }
+            animate();
+		</script>
+	</body>
+</html>

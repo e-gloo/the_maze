@@ -7,7 +7,7 @@
 			body { margin: 0; }
 		</style>
 	</head>
-	<body>
+	<body id="body">
 		<script src="js/three.js"></script>
 		<script>
             // Create base Threejs objects (Scene, Camera, renderer) 
@@ -18,18 +18,18 @@
             document.body.appendChild( renderer.domElement );
 
             // Create basic 3D green cube
-            const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-            const material = new THREE.MeshBasicMaterial( { color: 0x00aa00 } );
+            const boxGeo = new THREE.BoxGeometry( 1, 1, 1 );
+            const boxMat = new THREE.MeshBasicMaterial( { color: 0x00aa00, wireframe: true } );
 
             // Set our maze map
             const map = [
                 [0,0,0,0,0,0,0,0,0,0],
                 [1,1,1,1,1,1,0,0,0,0],
-                [0,0,0,0,0,1,0,0,0,0],
+                [1,0,0,0,0,1,0,0,0,0],
                 [1,1,1,1,0,1,0,0,0,0],
                 [0,0,0,1,0,1,0,0,0,0],
                 [0,0,0,1,0,1,1,1,1,1],
-                [0,0,0,1,0,0,0,0,0,0],
+                [0,0,0,1,0,0,0,0,0,1],
                 [0,0,0,1,1,1,1,1,1,1],
                 [0,0,0,0,0,0,0,0,0,0],
                 [0,0,0,0,0,0,0,0,0,0],
@@ -38,7 +38,7 @@
                 for (let x = 0; x < map[y].length; ++x) {
                     if (map[y][x] == 1) {
                         // Create 3D cube Mesh and adding them to the scene
-                        const cube = new THREE.Mesh( geometry, material );
+                        const cube = new THREE.Mesh( boxGeo, boxMat );
                         scene.add( cube );
                         // Setting cube position based on map position
                         cube.position.x = x;
@@ -54,11 +54,65 @@
             // Rotation x positive looks up, negative looks down, y positive looks right, negative looks left, and z rotates
             camera.rotation.x = 0.5
 
+            // Adding sphere to our scene
+            const sphereGeo = new THREE.SphereGeometry( 0.5, 32, 16 );
+            const sphereMat = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+            const sphere = new THREE.Mesh( sphereGeo, sphereMat );
+            scene.add( sphere );
+            sphere.position.y = -2;
+            sphere.position.x = 1;
+
+            // Variable representing our sphere position in our map
+            const sphereNextPos = {x: sphere.position.x, y: sphere.position.y};
+
             // function to render our scene and camera
             function animate() {
                 requestAnimationFrame( animate );
+                // if sphere position != from nextPosition, move the sphere closer to nextPosition
+                if (sphere.position.x != sphereNextPos.x) {
+                    sphere.position.x += sphere.position.x > sphereNextPos.x ? -0.1 : 0.1;
+                    sphere.position.x = parseFloat((Math.round(sphere.position.x * 10) / 10).toFixed(1))
+                }
+                if (sphere.position.y != sphereNextPos.y) {
+                    sphere.position.y += sphere.position.y > sphereNextPos.y ? -0.1 : 0.1;
+                    sphere.position.y = parseFloat((Math.round(sphere.position.y * 10) / 10).toFixed(1))
+                }
                 renderer.render( scene, camera );
             }
+
+            // functions to move sphereNextPos in the map
+            function moveSphereUp() {
+                // comparing with neg sphereNextPos.y because y in inverted between map and scene
+                if (-sphereNextPos.y - 1 >= 0 && map[-sphereNextPos.y - 1][sphere.position.x] != 1){
+                    sphereNextPos.y += 1;
+                }
+            }
+            function moveSphereDown() {
+                // comparing with neg sphereNextPos.y because y in inverted between map and scene
+                if (-sphereNextPos.y + 1 < 10 && map[-sphereNextPos.y + 1][sphere.position.x] != 1){
+                    sphereNextPos.y -= 1;
+                }
+            }
+            function moveSphereLeft() {
+                if (sphereNextPos.x - 1 >= 0 && [-sphere.position.y][sphereNextPos.x - 1] != 1){
+                    sphereNextPos.x -= 1;
+                }
+            }
+            function moveSphereRight() {
+                if (sphereNextPos.x + 1 < 10[-sphere.position.y][sphereNextPos.x + 1] != 1){
+                    sphereNextPos.x += 1;
+                }
+            }
+            // getting the body to apply eventlistener
+            const body = document.querySelector('body');
+            body.addEventListener('keydown', function(e) {
+                const keyToFnMap = new Map();
+                keyToFnMap.set('ArrowUp', moveSphereUp);
+                keyToFnMap.set('ArrowDown', moveSphereDown);
+                keyToFnMap.set('ArrowLeft', moveSphereLeft);
+                keyToFnMap.set('ArrowRight', moveSphereRight);
+                keyToFnMap.get(e.key)();
+            });
             animate();
 		</script>
 	</body>

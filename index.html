@@ -94,12 +94,12 @@
                 }
             }
             function moveSphereLeft() {
-                if (sphereNextPos.x - 1 >= 0 && [-sphere.position.y][sphereNextPos.x - 1] != 1){
+                if (sphereNextPos.x - 1 >= 0 && map[-sphere.position.y][sphereNextPos.x - 1] != 1){
                     sphereNextPos.x -= 1;
                 }
             }
             function moveSphereRight() {
-                if (sphereNextPos.x + 1 < 10[-sphere.position.y][sphereNextPos.x + 1] != 1){
+                if (sphereNextPos.x + 1 < 10 && map[-sphere.position.y][sphereNextPos.x + 1] != 1){
                     sphereNextPos.x += 1;
                 }
             }

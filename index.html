@@ -10,6 +10,7 @@
 	<body id="body">
 		<script src="js/three.js"></script>
 		<script>
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
             // Create base Threejs objects (Scene, Camera, renderer) 
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -66,54 +67,71 @@
             const sphereNextPos = {x: sphere.position.x, y: sphere.position.y};
 
             // function to render our scene and camera
-            function animate() {
-                requestAnimationFrame( animate );
-                // if sphere position != from nextPosition, move the sphere closer to nextPosition
-                if (sphere.position.x != sphereNextPos.x) {
-                    sphere.position.x += sphere.position.x > sphereNextPos.x ? -0.1 : 0.1;
+//            function animate() {
+//                requestAnimationFrame( animate );
+//                // if sphere position != from nextPosition, move the sphere closer to nextPosition
+//                if (sphere.position.x != sphereNextPos.x) {
+//                    sphere.position.x += sphere.position.x > sphereNextPos.x ? -0.1 : 0.1;
+//                    sphere.position.x = parseFloat((Math.round(sphere.position.x * 10) / 10).toFixed(1))
+//                }
+//                if (sphere.position.y != sphereNextPos.y) {
+//                    sphere.position.y += sphere.position.y > sphereNextPos.y ? -0.1 : 0.1;
+//                    sphere.position.y = parseFloat((Math.round(sphere.position.y * 10) / 10).toFixed(1))
+//                }
+//                renderer.render( scene, camera );
+//            }
+            
+            let canMove = true;
+            async function moveSphere(y, x, nbtimes) {
+                canMove = false;
+                for (let counter = 0; counter < nbtimes; ++counter) {
+                    sphere.position.x += x;
                     sphere.position.x = parseFloat((Math.round(sphere.position.x * 10) / 10).toFixed(1))
-                }
-                if (sphere.position.y != sphereNextPos.y) {
-                    sphere.position.y += sphere.position.y > sphereNextPos.y ? -0.1 : 0.1;
+                    sphere.position.y += y;
                     sphere.position.y = parseFloat((Math.round(sphere.position.y * 10) / 10).toFixed(1))
+                    renderer.render(scene, camera);
+                    await sleep(10);
                 }
-                renderer.render( scene, camera );
+                canMove = true;
             }
 
             // functions to move sphereNextPos in the map
             function moveSphereUp() {
                 // comparing with neg sphereNextPos.y because y in inverted between map and scene
-                if (-sphereNextPos.y - 1 >= 0 && map[-sphereNextPos.y - 1][sphere.position.x] != 1){
-                    sphereNextPos.y += 1;
+                if (-sphere.position.y - 1 >= 0 && map[-sphere.position.y - 1][sphere.position.x] != 1){
+                    moveSphere(0.1, 0, 10);
                 }
             }
             function moveSphereDown() {
                 // comparing with neg sphereNextPos.y because y in inverted between map and scene
-                if (-sphereNextPos.y + 1 < 10 && map[-sphereNextPos.y + 1][sphere.position.x] != 1){
-                    sphereNextPos.y -= 1;
+                if (-sphere.position.y + 1 < 10 && map[-sphere.position.y + 1][sphere.position.x] != 1){
+                    moveSphere(-0.1, 0, 10);
                 }
             }
             function moveSphereLeft() {
-                if (sphereNextPos.x - 1 >= 0 && map[-sphere.position.y][sphereNextPos.x - 1] != 1){
-                    sphereNextPos.x -= 1;
+                if (sphere.position.x - 1 >= 0 && map[-sphere.position.y][sphere.position.x - 1] != 1) {
+                    moveSphere(0, -0.1, 10);
                 }
             }
             function moveSphereRight() {
-                if (sphereNextPos.x + 1 < 10 && map[-sphere.position.y][sphereNextPos.x + 1] != 1){
-                    sphereNextPos.x += 1;
+                if (sphere.position.x + 1 < 10 && map[-sphere.position.y][sphere.position.x + 1] != 1) {
+                    moveSphere(0, 0.1, 10);
                 }
             }
             // getting the body to apply eventlistener
             const body = document.querySelector('body');
+            const keyToFnMap = new Map();
+            keyToFnMap.set('ArrowUp', moveSphereUp);
+            keyToFnMap.set('ArrowDown', moveSphereDown);
+            keyToFnMap.set('ArrowLeft', moveSphereLeft);
+            keyToFnMap.set('ArrowRight', moveSphereRight);
             body.addEventListener('keydown', function(e) {
-                const keyToFnMap = new Map();
-                keyToFnMap.set('ArrowUp', moveSphereUp);
-                keyToFnMap.set('ArrowDown', moveSphereDown);
-                keyToFnMap.set('ArrowLeft', moveSphereLeft);
-                keyToFnMap.set('ArrowRight', moveSphereRight);
-                keyToFnMap.get(e.key)();
+                if (canMove) {
+                    keyToFnMap.get(e.key)();
+                }
             });
-            animate();
+            //animate();
+           renderer.render( scene, camera );
 		</script>
 	</body>
 </html>

@@ -8,19 +8,38 @@
 		</style>
 	</head>
 	<body id="body">
+        <canvas id="scene" style="width: 100%;height: 100%; background-color: #03a7af; background-size: cover;display: block;"></canvas>
 		<script src="js/three.js"></script>
 		<script>
             const sleep = ms => new Promise(r => setTimeout(r, ms));
             // Create base Threejs objects (Scene, Camera, renderer) 
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-            const renderer = new THREE.WebGLRenderer();
-            renderer.setSize( window.innerWidth, window.innerHeight );
-            document.body.appendChild( renderer.domElement );
+            const canvas = document.querySelector('#scene');
+            const renderer = new THREE.WebGLRenderer({canvas, alpha: true});
+            const light = new THREE.AmbientLight( 0xffffff ); // soft white light
+            scene.add( light );
+            function resizeRendererToDisplaySize(renderer) {
+                const dom = renderer.domElement;
+                const pixelRatio = window.devicePixelRatio;
+                const width  = dom.clientWidth  * pixelRatio | 0;
+                const height = dom.clientHeight * pixelRatio | 0;
+                const needResize = dom.width !== width || canvas.height !== height;
+                if (needResize) {
+                    renderer.setSize(width, height, false);
+                }
+                return needResize;
+            }
+            if (resizeRendererToDisplaySize(renderer)) {
+                const canvas = renderer.domElement;
+                camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                camera.updateProjectionMatrix();
+            }
 
             // Create basic 3D green cube
             const boxGeo = new THREE.BoxGeometry( 1, 1, 1 );
-            const boxMat = new THREE.MeshBasicMaterial( { color: 0x00aa00, wireframe: true } );
+            //const boxMat = new THREE.MeshBasicMaterial( { color: 0x00aa00, wireframe: true } );
+            const boxMat = new THREE.MeshStandardMaterial( { color: '#2ec27e' } );
 
             // Set our maze map
             const map = [
@@ -51,13 +70,13 @@
 
             camera.position.z = 10;
             camera.position.x = 5;
-            camera.position.y = -10;
+            camera.position.y = -7;
             // Rotation x positive looks up, negative looks down, y positive looks right, negative looks left, and z rotates
-            camera.rotation.x = 0.5
+            camera.rotation.x = 0.3
 
             // Adding sphere to our scene
             const sphereGeo = new THREE.SphereGeometry( 0.5, 32, 16 );
-            const sphereMat = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+            const sphereMat = new THREE.MeshStandardMaterial( { color: 0xffff00 } );
             const sphere = new THREE.Mesh( sphereGeo, sphereMat );
             scene.add( sphere );
             sphere.position.y = -2;

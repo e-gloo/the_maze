@@ -14,11 +14,25 @@
             const sleep = ms => new Promise(r => setTimeout(r, ms));
             // Create base Threejs objects (Scene, Camera, renderer) 
             const scene = new THREE.Scene();
+            const targetObject = new THREE.Object3D();
             const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
             const canvas = document.querySelector('#scene');
             const renderer = new THREE.WebGLRenderer({canvas, alpha: true});
-            const light = new THREE.AmbientLight( 0xffffff ); // soft white light
-            scene.add( light );
+            //const light = new THREE.AmbientLight( 0xffffff ); // soft white light
+            //scene.add( light );
+            const directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+            directionalLight.position.x = 10;
+            directionalLight.position.y = 10;
+            directionalLight.position.z = -10
+            scene.add( directionalLight );
+            const planeGeo = new THREE.PlaneGeometry( 10, 10 );
+            const planeMat = new THREE.MeshBasicMaterial( {color: 0x048c14, side: THREE.DoubleSide} );
+            const plane = new THREE.Mesh( planeGeo, planeMat );
+            scene.add( plane );
+            plane.position.z = 0
+            plane.position.y = 4.5
+            plane.position.x = 4.5
+            //plane.rotation.x = 1.5707963
             function resizeRendererToDisplaySize(renderer) {
                 const dom = renderer.domElement;
                 const pixelRatio = window.devicePixelRatio;
@@ -39,7 +53,7 @@
             // Create basic 3D green cube
             const boxGeo = new THREE.BoxGeometry( 1, 1, 1 );
             //const boxMat = new THREE.MeshBasicMaterial( { color: 0x00aa00, wireframe: true } );
-            const boxMat = new THREE.MeshStandardMaterial( { color: '#2ec27e' } );
+            const boxMat = new THREE.MeshStandardMaterial( { color: '#6903ad' } );
 
             // Set our maze map
             const map = [
@@ -59,27 +73,34 @@
                     if (map[y][x] == 1) {
                         // Create 3D cube Mesh and adding them to the scene
                         const cube = new THREE.Mesh( boxGeo, boxMat );
-                        scene.add( cube );
+                        //scene.add( cube );
+                        targetObject.add(cube);
                         // Setting cube position based on map position
                         cube.position.x = x;
                         // Y position inverted because positive y goes up on threejs and goes down on out map
-                        cube.position.y = -y;
+                        cube.position.y = y;
                     }
                 }
             }
 
-            camera.position.z = 10;
+            camera.position.z = -10;
+            camera.position.y = 5;
             camera.position.x = 5;
-            camera.position.y = -7;
+            //camera.position.y = 10;
             // Rotation x positive looks up, negative looks down, y positive looks right, negative looks left, and z rotates
-            camera.rotation.x = 0.3
+            camera.rotation.y = -Math.PI;
+            camera.rotation.z = Math.PI
+            camera.rotation.x = 0
+
+            directionalLight.target = targetObject;
+            scene.add(directionalLight.target);
 
             // Adding sphere to our scene
             const sphereGeo = new THREE.SphereGeometry( 0.5, 32, 16 );
             const sphereMat = new THREE.MeshStandardMaterial( { color: 0xffff00 } );
             const sphere = new THREE.Mesh( sphereGeo, sphereMat );
             scene.add( sphere );
-            sphere.position.y = -2;
+            sphere.position.y = 2;
             sphere.position.x = 1;
 
             // Variable representing our sphere position in our map
@@ -117,23 +138,23 @@
             // functions to move sphereNextPos in the map
             function moveSphereUp() {
                 // comparing with neg sphereNextPos.y because y in inverted between map and scene
-                if (-sphere.position.y - 1 >= 0 && map[-sphere.position.y - 1][sphere.position.x] != 1){
-                    moveSphere(0.1, 0, 10);
+                if (sphere.position.y - 1 >= 0 && map[sphere.position.y - 1][sphere.position.x] != 1){
+                    moveSphere(-0.1, 0, 10);
                 }
             }
             function moveSphereDown() {
                 // comparing with neg sphereNextPos.y because y in inverted between map and scene
-                if (-sphere.position.y + 1 < 10 && map[-sphere.position.y + 1][sphere.position.x] != 1){
-                    moveSphere(-0.1, 0, 10);
+                if (sphere.position.y + 1 < 10 && map[sphere.position.y + 1][sphere.position.x] != 1){
+                    moveSphere(0.1, 0, 10);
                 }
             }
             function moveSphereLeft() {
-                if (sphere.position.x - 1 >= 0 && map[-sphere.position.y][sphere.position.x - 1] != 1) {
+                if (sphere.position.x - 1 >= 0 && map[sphere.position.y][sphere.position.x - 1] != 1) {
                     moveSphere(0, -0.1, 10);
                 }
             }
             function moveSphereRight() {
-                if (sphere.position.x + 1 < 10 && map[-sphere.position.y][sphere.position.x + 1] != 1) {
+                if (sphere.position.x + 1 < 10 && map[sphere.position.y][sphere.position.x + 1] != 1) {
                     moveSphere(0, 0.1, 10);
                 }
             }

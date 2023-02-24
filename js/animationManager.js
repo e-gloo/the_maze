@@ -1,12 +1,12 @@
 import * as THREE from "three";
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader';
 
-let mixer;
-let model;
-let fileAnimations;
+let mixer, model, fileAnimations;
 var loader = new GLTFLoader();
+let currentAnimation;
 
 export function initCharacter(scene, modelPath, position, rotation) {
+    let animation;
     loader.load(
         modelPath,
         async function(gltf) {
@@ -29,23 +29,77 @@ export function initCharacter(scene, modelPath, position, rotation) {
             //loaderAnim.remove();
             mixer = new THREE.AnimationMixer(model);
             console.log(fileAnimations);
-            idleCharacter();
+            animation = idleCharacter();
+            animation.play();
         },
         undefined, // We don't need this export function
         function(error) {
             console.error(error);
         }
     );
+    return animation;
 }
 
 export function idleCharacter() {
-    let idleAnim = THREE.AnimationClip.findByName(
+    let idleClip = THREE.AnimationClip.findByName(
         fileAnimations,
         "idle"
     );
-    const idle = mixer.clipAction(idleAnim);
-    idle.setLoop(THREE.LoopRepeat);
-    idle.play();
+    const idleAnimation = mixer.clipAction(idleClip);
+    idleAnimation.setLoop(THREE.LoopRepeat);
+    //idleAnimation.play();
+    currentAnimation = idleAnimation;
+    return idleAnimation;
+}
+
+
+export function walkingCharacter() {
+    const walkingClip = THREE.AnimationClip.findByName(
+        fileAnimations,
+        "walking_in_place"
+    );
+    const walkingAnimation = mixer.clipAction(walkingClip);
+    walkingAnimation
+        .setDuration(1.2)
+        .setLoop(THREE.LoopRepeat)
+    //walkingAnimation.play();
+    currentAnimation = walkingAnimation;
+    return walkingAnimation;
+}
+
+export function fallingCharacter() {
+    const fallingClip = THREE.AnimationClip.findByName(
+        fileAnimations,
+        "falling"
+    );
+    const fallingAnimation = mixer.clipAction(fallingClip);
+    fallingAnimation
+        .setDuration(1.5)
+        .setLoop(THREE.LoopOnce)
+    fallingAnimation.clampWhenFinished = true;
+    //fallingAnimation.play();
+    return fallingAnimation;
+}
+
+export function sillyDancingCharacter() {
+    const sillyDancingClip = THREE.AnimationClip.findByName(
+        fileAnimations,
+        "silly_dancing"
+    );
+    const sillyDancingAnimation = mixer.clipAction(sillyDancingClip);
+    sillyDancingAnimation
+        .setDuration(10)
+        .setLoop(THREE.LoopRepeat)
+    //sillyDancingAnimation.clampWhenFinished = true;
+    //fallingAnimation.play();
+    return sillyDancingAnimation;
+}
+
+export function animationTransition(fromAnimation, fromSpeed, toAnimation) {
+    toAnimation.reset();
+    toAnimation.play();
+    fromAnimation.crossFadeTo(toAnimation, fromSpeed, true);
+    //fromAnimation.stop();
 }
 
 export function getMixer() {
@@ -56,18 +110,6 @@ export function getModel() {
     return model;
 }
 
-export function walkingCharacter() {
-    mixer
-        .clipAction(
-            THREE.AnimationClip.findByName(
-                fileAnimations,
-                "walking_in_place"
-            )
-        )
-        .setDuration(1.2)
-        .setLoop(THREE.LoopRepeat)
-        .play();
+export function getCurrentAnimation() {
+    return currentAnimation;
 }
-
-
-//module.exports = { initCharacter, getMixer, getModel, walkingCharacter, idleCharacter }

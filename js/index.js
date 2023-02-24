@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { initCharacter, getMixer, getModel, walkingCharacter, idleCharacter } from "./animationManager.js";
+import { sillyDancingCharacter, getCurrentAnimation, animationTransition, initCharacter, getMixer, getModel, walkingCharacter, idleCharacter, fallingCharacter } from "./animationManager.js";
 // Set our main variables
 let scene,
     renderer,
@@ -36,12 +36,12 @@ function init() {
         1000
     );
 
-    camera.position.z = -10;
-    camera.position.y = 7;
+    camera.position.z = -7;
+    camera.position.y = 15;
     camera.position.x = 5;
     camera.rotation.y = -Math.PI;
     camera.rotation.z = Math.PI;
-    camera.rotation.x = 0.3;
+    camera.rotation.x = 0.8;
 
     targetObject = new THREE.Object3D();
 
@@ -52,6 +52,11 @@ function init() {
     directionalLight.position.z = -10;
     scene.add(directionalLight);
 
+    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight2.position.x = 0;
+    directionalLight2.position.y = 10;
+    directionalLight2.position.z = -20;
+    scene.add(directionalLight2);
 
     const planeGeo = new THREE.PlaneGeometry(10, 10);
     const planeMat = new THREE.MeshBasicMaterial({
@@ -97,8 +102,12 @@ function init() {
         }
     }
     directionalLight.target = targetObject;
+    directionalLight2.target = targetObject;
     scene.add(directionalLight.target);
     initCharacter(scene, '../assets/lasouris.glb', { x: 1, y: 2, z: -0.1 }, { x: -Math.PI / 2, y: Math.PI / 2 });
+    //directionalLight2.target = getModel();
+    //currentAnimation = idleCharacter();
+    //animationTransition(currentAnimation, 1, currentAnimation, 1);
     document.body.addEventListener("keydown", moveCharacter);
 }
 
@@ -108,18 +117,28 @@ keyToFnMap.set('ArrowDown', moveCharacterDown);
 keyToFnMap.set('ArrowLeft', moveCharacterLeft);
 keyToFnMap.set('ArrowRight', moveCharacterRight);
 
-const movingAction = {x: 0, y: 0};
-const targetPosition = {x: 0, y: 0};
+const movingAction = { x: 0, y: 0 };
+const targetPosition = { x: 0, y: 0 };
+let isDown = false;
 
 function moveCharacterDown() {
     const character = getModel();
-    if (character.position.y + 1 < map.length && map[character.position.y + 1][character.position.x] != 1) {
-        movingAction.x = 0;
-        movingAction.y = 0.02;
-        targetPosition.x = character.position.x;
-        targetPosition.y = character.position.y + 1;
+    if (character.position.y + 1 < map.length) {
         character.rotation.y = 0;
-        return true;
+        if (map[character.position.y + 1][character.position.x] != 1) {
+            movingAction.x = 0;
+            movingAction.y = 0.02;
+            targetPosition.x = character.position.x;
+            targetPosition.y = character.position.y + 1;
+            return true;
+        }
+        if (map[character.position.y + 1][character.position.x] == 1) {
+            //getMixer().stopAllAction();
+            const currentAnimation = getCurrentAnimation();
+            const nextAnimation = fallingCharacter();
+            animationTransition(currentAnimation, 0.2, nextAnimation);
+            isDown = true;
+        }
     }
     return false;
 }
@@ -142,7 +161,7 @@ function moveCharacterLeft() {
         movingAction.y = 0;
         targetPosition.x = character.position.x - 1;
         targetPosition.y = character.position.y;
-        character.rotation.y = -Math.PI/2;
+        character.rotation.y = -Math.PI / 2;
         return true;
     }
     return false;
@@ -154,7 +173,7 @@ function moveCharacterRight() {
         movingAction.y = 0;
         targetPosition.x = character.position.x + 1;
         targetPosition.y = character.position.y;
-        character.rotation.y = Math.PI/2;
+        character.rotation.y = Math.PI / 2;
         return true;
     }
     return false;
@@ -167,20 +186,21 @@ function moveCharacter(e) {
     }
     if (playAnim) {
         isMoving = true;
-        const mixer = getMixer();
-        mixer.stopAllAction();
-        walkingCharacter();
+        //const mixer = getMixer();
+        //        mixer.stopAllAction();
+        //        walkingCharacter().play();
+        const currentAnimation = getCurrentAnimation();
+        const nextAnimation = walkingCharacter();
+        animationTransition(currentAnimation, 0, nextAnimation);
     }
 }
-
-
 
 function update() {
     const mixer = getMixer();
     const character = getModel();
     if (mixer) {
         mixer.update(clock.getDelta());
-        if (isMoving && (character.position.x !== targetPosition.x || character.position.y !== targetPosition.y) ) {
+        if (isMoving && (character.position.x !== targetPosition.x || character.position.y !== targetPosition.y)) {
             character.position.x += movingAction.x;
             character.position.x = parseFloat((Math.round(character.position.x * 100) / 100).toFixed(2))
             character.position.y += movingAction.y;
@@ -188,8 +208,18 @@ function update() {
             if (character.position.x === targetPosition.x && character.position.y === targetPosition.y) {
                 console.log("Character new position", character.position);
                 isMoving = false;
-                mixer.stopAllAction();
-                idleCharacter();
+                if (targetPosition.x === 8 && targetPosition.y === 6) {
+                    character.rotation.y = 0;
+                    const currentAnimation = getCurrentAnimation();
+                    const nextAnimation = sillyDancingCharacter();
+                    animationTransition(currentAnimation, 0.2, nextAnimation);
+                } else {
+                    const currentAnimation = getCurrentAnimation();
+                    const nextAnimation = idleCharacter();
+                    animationTransition(currentAnimation, 0.2, nextAnimation);
+                }
+                //mixer.stopAllAction();
+                //idleCharacter();
             }
         }
     }

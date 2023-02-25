@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { sillyDancingCharacter, getCurrentAnimation, animationTransition, initCharacter, getMixer, getModel, walkingCharacter, idleCharacter, fallingCharacter } from "./animationManager.js";
+import { sillyDancingCharacter, getCurrentAnimation, animationTransition, initCharacter, getMixer, getModel, walkingCharacter, idleCharacter, fallingCharacter, setCurrentAnimation } from "./animationManager.js";
+
 // Set our main variables
 let scene,
     renderer,
@@ -7,6 +8,7 @@ let scene,
     targetObject,
     map,
     isMoving = false,
+    isRotating = false,
     clock = new THREE.Clock()// Used for anims, which run to a clock instead of frame rate
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -36,12 +38,12 @@ function init() {
         1000
     );
 
-    camera.position.z = -7;
-    camera.position.y = 15;
+    camera.position.z = -10;
+    camera.position.y = 7;
     camera.position.x = 5;
     camera.rotation.y = -Math.PI;
     camera.rotation.z = Math.PI;
-    camera.rotation.x = 0.8;
+    camera.rotation.x = 0.3;
 
     targetObject = new THREE.Object3D();
 
@@ -104,10 +106,7 @@ function init() {
     directionalLight.target = targetObject;
     directionalLight2.target = targetObject;
     scene.add(directionalLight.target);
-    initCharacter(scene, '../assets/lasouris.glb', { x: 1, y: 2, z: -0.1 }, { x: -Math.PI / 2, y: Math.PI / 2 });
-    //directionalLight2.target = getModel();
-    //currentAnimation = idleCharacter();
-    //animationTransition(currentAnimation, 1, currentAnimation, 1);
+    initCharacter(scene, '../assets/MouseCharacter.glb', { x: 1, y: 2, z: -0.1 }, { x: -Math.PI / 2, y: Math.PI / 2 });
     document.body.addEventListener("keydown", moveCharacter);
 }
 
@@ -119,26 +118,30 @@ keyToFnMap.set('ArrowRight', moveCharacterRight);
 
 const movingAction = { x: 0, y: 0 };
 const targetPosition = { x: 0, y: 0 };
+let targetYRotation = Math.PI / 2;
 let isDown = false;
+let shouldFall = false;
 
 function moveCharacterDown() {
     const character = getModel();
     if (character.position.y + 1 < map.length) {
-        character.rotation.y = 0;
+        targetYRotation = 0;
+        if (character.rotation.y - targetYRotation > 0) {
+            isRotating = true;
+        }
+        movingAction.x = 0;
+        movingAction.y = 0.02;
+        targetPosition.x = character.position.x;
         if (map[character.position.y + 1][character.position.x] != 1) {
-            movingAction.x = 0;
-            movingAction.y = 0.02;
-            targetPosition.x = character.position.x;
             targetPosition.y = character.position.y + 1;
-            return true;
         }
+        console.log(character.position);
+        console.log(map[character.position.y + 1][character.position.x]);
         if (map[character.position.y + 1][character.position.x] == 1) {
-            //getMixer().stopAllAction();
-            const currentAnimation = getCurrentAnimation();
-            const nextAnimation = fallingCharacter();
-            animationTransition(currentAnimation, 0.2, nextAnimation);
-            isDown = true;
+            targetPosition.y = character.position.y + 0.3;
+            shouldFall = true
         }
+        return true;
     }
     return false;
 }
@@ -181,17 +184,16 @@ function moveCharacterRight() {
 
 function moveCharacter(e) {
     let playAnim = false;
-    if (!isMoving && keyToFnMap.has(e.key)) {
+    if (!isDown && !isMoving && keyToFnMap.has(e.key)) {
         playAnim = keyToFnMap.get(e.key)();
     }
     if (playAnim) {
         isMoving = true;
-        //const mixer = getMixer();
-        //        mixer.stopAllAction();
-        //        walkingCharacter().play();
-        const currentAnimation = getCurrentAnimation();
-        const nextAnimation = walkingCharacter();
-        animationTransition(currentAnimation, 0, nextAnimation);
+        if (!isRotating) {
+            const currentAnimation = getCurrentAnimation();
+            const nextAnimation = walkingCharacter();
+            animationTransition(currentAnimation, 0, nextAnimation);
+        }
     }
 }
 
@@ -200,7 +202,21 @@ function update() {
     const character = getModel();
     if (mixer) {
         mixer.update(clock.getDelta());
-        if (isMoving && (character.position.x !== targetPosition.x || character.position.y !== targetPosition.y)) {
+        const currentAnimation = getCurrentAnimation();
+        if (isRotating) {
+            const toAdd = character.rotation.y - targetYRotation > 0 ? -0.1 : 0.1
+            character.rotation.y += toAdd;
+            if ((toAdd < 0 && character.rotation.y - targetYRotation < 0) || (toAdd > 0 && character.rotation.y - targetYRotation > 0)) {
+                character.rotation.y = targetYRotation;
+                isRotating = false;
+                if (isMoving) {
+                    const nextAnimation = walkingCharacter();
+                    currentAnimation.reset();
+                    animationTransition(currentAnimation, 0, nextAnimation);
+                }
+            }
+        }
+        else if (!isRotating && isMoving && (character.position.x !== targetPosition.x || character.position.y !== targetPosition.y)) {
             character.position.x += movingAction.x;
             character.position.x = parseFloat((Math.round(character.position.x * 100) / 100).toFixed(2))
             character.position.y += movingAction.y;
@@ -208,18 +224,17 @@ function update() {
             if (character.position.x === targetPosition.x && character.position.y === targetPosition.y) {
                 console.log("Character new position", character.position);
                 isMoving = false;
+                let nextAnimation;
                 if (targetPosition.x === 8 && targetPosition.y === 6) {
                     character.rotation.y = 0;
-                    const currentAnimation = getCurrentAnimation();
-                    const nextAnimation = sillyDancingCharacter();
-                    animationTransition(currentAnimation, 0.2, nextAnimation);
+                    nextAnimation = sillyDancingCharacter();
+                } else if (shouldFall) {
+                    nextAnimation = fallingCharacter();
+                    isDown = true
                 } else {
-                    const currentAnimation = getCurrentAnimation();
-                    const nextAnimation = idleCharacter();
-                    animationTransition(currentAnimation, 0.2, nextAnimation);
+                    nextAnimation = idleCharacter();
                 }
-                //mixer.stopAllAction();
-                //idleCharacter();
+                animationTransition(currentAnimation, 0.2, nextAnimation);
             }
         }
     }

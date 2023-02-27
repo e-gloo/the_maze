@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { sillyDancingCharacter, getCurrentAnimation, animationTransition, initCharacter, getMixer, getModel, walkingCharacter, idleCharacter, fallingCharacter, setCurrentAnimation } from "./animationManager.js";
+import { sillyDancingCharacter, getCurrentAnimation, animationTransition, initCharacter, getMixer, getModel, walkingCharacter, idleCharacter, fallingCharacter, setCurrentAnimation, turnRight } from "./animationManager.js";
+import { LEVEL1, LEVEL2} from '../assets/maps.js';
 
 // Set our main variables
 let scene,
@@ -8,6 +9,7 @@ let scene,
     targetObject,
     map,
     isMoving = false,
+    multiplier = 1,
     isRotating = false,
     clock = new THREE.Clock()// Used for anims, which run to a clock instead of frame rate
 
@@ -16,6 +18,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 init();
 
 function init() {
+    // Set our maze map
+    map = LEVEL2;
     const canvas = document.querySelector("#c");
 
     // Init the scene
@@ -38,9 +42,9 @@ function init() {
         1000
     );
 
-    camera.position.z = -10;
+    camera.position.z = -map.length;
     camera.position.y = 7;
-    camera.position.x = 5;
+    camera.position.x = map.length / 2;
     camera.rotation.y = -Math.PI;
     camera.rotation.z = Math.PI;
     camera.rotation.x = 0.3;
@@ -49,18 +53,18 @@ function init() {
 
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.x = 10;
+    directionalLight.position.x = map[0].length;
     directionalLight.position.y = 0;
-    directionalLight.position.z = -10;
+    directionalLight.position.z = -map.length;
     scene.add(directionalLight);
 
     const directionalLight2 = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight2.position.x = 0;
-    directionalLight2.position.y = 10;
-    directionalLight2.position.z = -20;
+    directionalLight2.position.y = map.length;
+    directionalLight2.position.z = -map.length*2;
     scene.add(directionalLight2);
 
-    const planeGeo = new THREE.PlaneGeometry(10, 10);
+    const planeGeo = new THREE.PlaneGeometry(map.length, map[0].length);
     const planeMat = new THREE.MeshBasicMaterial({
         color: 0x048c14,
         side: THREE.DoubleSide,
@@ -68,27 +72,14 @@ function init() {
     const plane = new THREE.Mesh(planeGeo, planeMat);
     scene.add(plane);
     plane.position.z = 0;
-    plane.position.y = 4.5;
-    plane.position.x = 4.5;
+    plane.position.y = map.length / 2;
+    plane.position.x = map[0].length / 2;
 
     // Create basic 3D green cube
     const boxGeo = new THREE.BoxGeometry(1, 1, 1);
     //const boxMat = new THREE.MeshBasicMaterial( { color: 0x00aa00, wireframe: true } );
     const boxMat = new THREE.MeshStandardMaterial({ color: "#6903ad" });
 
-    // Set our maze map
-    map = [
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
-        [1, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 1, 1, 1, 1, 1],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ];
     for (let y = 0; y < map.length; ++y) {
         for (let x = 0; x < map[y].length; ++x) {
             if (map[y][x] == 1) {
@@ -106,7 +97,7 @@ function init() {
     directionalLight.target = targetObject;
     directionalLight2.target = targetObject;
     scene.add(directionalLight.target);
-    initCharacter(scene, '../assets/MouseCharacter.glb', { x: 1, y: 2, z: -0.1 }, { x: -Math.PI / 2, y: Math.PI / 2 });
+    initCharacter(scene, '../assets/MouseCharacter.glb', { x: 5, y: 5, z: -0.1 }, { x: -Math.PI / 2, y: Math.PI / 2 });
     document.body.addEventListener("keydown", moveCharacter);
 }
 
@@ -121,6 +112,7 @@ const targetPosition = { x: 0, y: 0 };
 let targetYRotation = Math.PI / 2;
 let isDown = false;
 let shouldFall = false;
+let countAnimation = 0;
 
 function moveCharacterDown() {
     const character = getModel();
@@ -128,6 +120,15 @@ function moveCharacterDown() {
         targetYRotation = 0;
         if (character.rotation.y - targetYRotation > 0) {
             isRotating = true;
+            const diffRotation = character.rotation.y - targetYRotation;
+            const currentAnimation = getCurrentAnimation();
+            const nextAnimation = turnRight();
+            if (diffRotation === Math.PI) {
+                nextAnimation.setLoop(THREE.Once);
+                countAnimation = 1;
+            }
+            animationTransition(currentAnimation, 0, nextAnimation);
+            multiplier = 2;
         }
         movingAction.x = 0;
         movingAction.y = 0.02;
@@ -135,8 +136,6 @@ function moveCharacterDown() {
         if (map[character.position.y + 1][character.position.x] != 1) {
             targetPosition.y = character.position.y + 1;
         }
-        console.log(character.position);
-        console.log(map[character.position.y + 1][character.position.x]);
         if (map[character.position.y + 1][character.position.x] == 1) {
             targetPosition.y = character.position.y + 0.3;
             shouldFall = true
@@ -200,20 +199,26 @@ function moveCharacter(e) {
 function update() {
     const mixer = getMixer();
     const character = getModel();
+    let skip_rendering = false;
     if (mixer) {
-        mixer.update(clock.getDelta());
+        mixer.update(clock.getDelta() * multiplier);
         const currentAnimation = getCurrentAnimation();
-        if (isRotating) {
-            const toAdd = character.rotation.y - targetYRotation > 0 ? -0.1 : 0.1
-            character.rotation.y += toAdd;
-            if ((toAdd < 0 && character.rotation.y - targetYRotation < 0) || (toAdd > 0 && character.rotation.y - targetYRotation > 0)) {
+        if (isRotating && currentAnimation === turnRight() && !currentAnimation.isRunning()) {
+            skip_rendering = true;
+            if (countAnimation === 0) {
+                console.log("Both animation finished");
+                const nextAnimation = walkingCharacter();
+                animationTransition(currentAnimation, 0, nextAnimation);
                 character.rotation.y = targetYRotation;
                 isRotating = false;
-                if (isMoving) {
-                    const nextAnimation = walkingCharacter();
-                    currentAnimation.reset();
-                    animationTransition(currentAnimation, 0, nextAnimation);
-                }
+                multiplier = 1;
+            } else {
+                console.log("One animation finished");
+                character.rotation.y -= Math.PI/2;
+                countAnimation -= 1;
+                const nextAnimation = turnRight();
+                animationTransition(currentAnimation, 0, nextAnimation);
+                //currentAnimation.play();
             }
         }
         else if (!isRotating && isMoving && (character.position.x !== targetPosition.x || character.position.y !== targetPosition.y)) {
@@ -244,7 +249,9 @@ function update() {
         camera.aspect = canvas.clientWidth / canvas.clientHeight;
         camera.updateProjectionMatrix();
     }
-    renderer.render(scene, camera);
+    if (!skip_rendering) {
+        renderer.render(scene, camera);
+    }
     requestAnimationFrame(update);
 }
 

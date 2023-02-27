@@ -85,6 +85,18 @@ export function sillyDancingCharacter() {
     return sillyDancingAnimation;
 }
 
+export function turnRight() {
+    const turnRightClip = THREE.AnimationClip.findByName(
+        fileAnimations,
+        "TurnRight"
+    );
+    const turnRightAnimation = mixer.clipAction(turnRightClip);
+    turnRightAnimation
+        .setLoop(THREE.LoopOnce)
+    turnRightAnimation.clampWhenFinished = true;
+    return turnRightAnimation;
+}
+
 export function animationTransition(fromAnimation, fromSpeed, toAnimation) {
     toAnimation.reset();
     toAnimation.play();

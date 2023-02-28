@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { sillyDancingCharacter, getCurrentAnimation, animationTransition, initCharacter, getMixer, getModel, walkingCharacter, idleCharacter, fallingCharacter, setCurrentAnimation, turnRight } from "./animationManager.js";
-import { LEVEL1, LEVEL2} from '../assets/maps.js';
+import { sillyDancingCharacter, getCurrentAnimation, animationTransition, initCharacter, getMixer, getModel, walkingCharacter, idleCharacter, fallingCharacter, setCurrentAnimation, turnRight, turnLeft } from "./animationManager.js";
+import { LEVEL1, LEVEL2 } from '../assets/maps.js';
 
 // Set our main variables
 let scene,
@@ -42,12 +42,12 @@ function init() {
         1000
     );
 
-    camera.position.z = -map.length;
-    camera.position.y = 7;
+    camera.position.z = -map.length + 2;
+    camera.position.y = map.length + 2;
     camera.position.x = map.length / 2;
     camera.rotation.y = -Math.PI;
     camera.rotation.z = Math.PI;
-    camera.rotation.x = 0.3;
+    camera.rotation.x = 0.7;
 
     targetObject = new THREE.Object3D();
 
@@ -61,7 +61,7 @@ function init() {
     const directionalLight2 = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight2.position.x = 0;
     directionalLight2.position.y = map.length;
-    directionalLight2.position.z = -map.length*2;
+    directionalLight2.position.z = -map.length * 2;
     scene.add(directionalLight2);
 
     const planeGeo = new THREE.PlaneGeometry(map.length, map[0].length);
@@ -72,8 +72,8 @@ function init() {
     const plane = new THREE.Mesh(planeGeo, planeMat);
     scene.add(plane);
     plane.position.z = 0;
-    plane.position.y = map.length / 2;
-    plane.position.x = map[0].length / 2;
+    plane.position.y = (map.length - 1) / 2;
+    plane.position.x = (map[0].length - 1) / 2;
 
     // Create basic 3D green cube
     const boxGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -97,7 +97,7 @@ function init() {
     directionalLight.target = targetObject;
     directionalLight2.target = targetObject;
     scene.add(directionalLight.target);
-    initCharacter(scene, '../assets/MouseCharacter.glb', { x: 5, y: 5, z: -0.1 }, { x: -Math.PI / 2, y: Math.PI / 2 });
+    initCharacter(scene, '../assets/MouseCharacter.glb', { x: 4, y: 4, z: -0.1 }, { x: -Math.PI / 2, y: Math.PI / 2 });
     document.body.addEventListener("keydown", moveCharacter);
 }
 
@@ -114,29 +114,33 @@ let isDown = false;
 let shouldFall = false;
 let countAnimation = 0;
 
+function turnCharacter(characterYRotation, targetRotation) {
+    targetYRotation = targetRotation;
+    const diffRotation = characterYRotation - targetRotation;
+    if (characterYRotation !== targetRotation) {
+        isRotating = true;
+        const currentAnimation = getCurrentAnimation();
+        const rotationLeft = characterYRotation + Math.PI / 2 > Math.PI ? -Math.PI / 2 : characterYRotation + Math.PI / 2;
+        const nextAnimation = rotationLeft === targetRotation ? turnLeft() : turnRight();
+        if (Math.abs(diffRotation) === Math.PI || diffRotation === 0) {
+            countAnimation = 1;
+        }
+        animationTransition(currentAnimation, 0, nextAnimation);
+        multiplier = 2;
+    }
+}
+
 function moveCharacterDown() {
     const character = getModel();
     if (character.position.y + 1 < map.length) {
-        targetYRotation = 0;
-        if (character.rotation.y - targetYRotation > 0) {
-            isRotating = true;
-            const diffRotation = character.rotation.y - targetYRotation;
-            const currentAnimation = getCurrentAnimation();
-            const nextAnimation = turnRight();
-            if (diffRotation === Math.PI) {
-                nextAnimation.setLoop(THREE.Once);
-                countAnimation = 1;
-            }
-            animationTransition(currentAnimation, 0, nextAnimation);
-            multiplier = 2;
-        }
+        turnCharacter(character.rotation.y, 0);
         movingAction.x = 0;
         movingAction.y = 0.02;
         targetPosition.x = character.position.x;
         if (map[character.position.y + 1][character.position.x] != 1) {
             targetPosition.y = character.position.y + 1;
         }
-        if (map[character.position.y + 1][character.position.x] == 1) {
+        else {
             targetPosition.y = character.position.y + 0.3;
             shouldFall = true
         }
@@ -146,36 +150,53 @@ function moveCharacterDown() {
 }
 function moveCharacterUp() {
     const character = getModel();
-    if (character.position.y - 1 >= 0 && map[character.position.y - 1][character.position.x] != 1) {
+    if (character.position.y - 1 >= 0) {
+        turnCharacter(character.rotation.y, Math.PI);
         movingAction.x = 0;
         movingAction.y = -0.02;
         targetPosition.x = character.position.x;
-        targetPosition.y = character.position.y - 1;
-        character.rotation.y = Math.PI;
+        if (map[character.position.y - 1][character.position.x] != 1) {
+            targetPosition.y = character.position.y - 1;
+        }
+        else {
+            targetPosition.y = character.position.y - 0.3;
+            shouldFall = true;
+        }
         return true;
     }
     return false;
 }
 function moveCharacterLeft() {
     const character = getModel();
-    if (character.position.x - 1 >= 0 && map[character.position.y][character.position.x - 1] != 1) {
+    if (character.position.x - 1 >= 0) {
+        turnCharacter(character.rotation.y, -Math.PI / 2);
         movingAction.x = -0.02;
         movingAction.y = 0;
-        targetPosition.x = character.position.x - 1;
         targetPosition.y = character.position.y;
-        character.rotation.y = -Math.PI / 2;
+        if (map[character.position.y][character.position.x - 1] != 1) {
+            targetPosition.x = character.position.x - 1;
+        }
+        else {
+            targetPosition.x = character.position.x - 0.3;
+            shouldFall = true;
+        }
         return true;
     }
     return false;
 }
 function moveCharacterRight() {
     const character = getModel();
-    if (character.position.x + 1 < map[0].length && map[character.position.y][character.position.x + 1] != 1) {
+    if (character.position.x + 1 < map[0].length) {
+        turnCharacter(character.rotation.y, Math.PI / 2);
         movingAction.x = 0.02;
         movingAction.y = 0;
-        targetPosition.x = character.position.x + 1;
         targetPosition.y = character.position.y;
-        character.rotation.y = Math.PI / 2;
+        if (map[character.position.y][character.position.x + 1] != 1) {
+            targetPosition.x = character.position.x + 1;
+        } else {
+            targetPosition.x = character.position.x + 0.3;
+            shouldFall = true;
+        }
         return true;
     }
     return false;
@@ -203,22 +224,22 @@ function update() {
     if (mixer) {
         mixer.update(clock.getDelta() * multiplier);
         const currentAnimation = getCurrentAnimation();
-        if (isRotating && currentAnimation === turnRight() && !currentAnimation.isRunning()) {
+        if (isRotating && (currentAnimation === turnRight() || currentAnimation === turnLeft()) && !currentAnimation.isRunning()) {
             skip_rendering = true;
             if (countAnimation === 0) {
-                console.log("Both animation finished");
                 const nextAnimation = walkingCharacter();
                 animationTransition(currentAnimation, 0, nextAnimation);
                 character.rotation.y = targetYRotation;
                 isRotating = false;
                 multiplier = 1;
             } else {
-                console.log("One animation finished");
-                character.rotation.y -= Math.PI/2;
+                if (character.rotation.y === -Math.PI / 2 && currentAnimation === turnRight()) {
+                    character.rotation.y = Math.PI
+                } else {
+                    character.rotation.y += currentAnimation === turnLeft() ? Math.PI / 2 : -Math.PI / 2;
+                }
                 countAnimation -= 1;
-                const nextAnimation = turnRight();
-                animationTransition(currentAnimation, 0, nextAnimation);
-                //currentAnimation.play();
+                animationTransition(currentAnimation, 0, currentAnimation);
             }
         }
         else if (!isRotating && isMoving && (character.position.x !== targetPosition.x || character.position.y !== targetPosition.y)) {
@@ -227,7 +248,6 @@ function update() {
             character.position.y += movingAction.y;
             character.position.y = parseFloat((Math.round(character.position.y * 100) / 100).toFixed(2))
             if (character.position.x === targetPosition.x && character.position.y === targetPosition.y) {
-                console.log("Character new position", character.position);
                 isMoving = false;
                 let nextAnimation;
                 if (targetPosition.x === 8 && targetPosition.y === 6) {

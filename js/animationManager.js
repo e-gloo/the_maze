@@ -97,6 +97,18 @@ export function turnRight() {
     return turnRightAnimation;
 }
 
+export function turnLeft() {
+    const turnLeftClip = THREE.AnimationClip.findByName(
+        fileAnimations,
+        "TurnLeft"
+    );
+    const turnLeftAnimation = mixer.clipAction(turnLeftClip);
+    turnLeftAnimation
+        .setLoop(THREE.LoopOnce)
+    turnLeftAnimation.clampWhenFinished = true;
+    return turnLeftAnimation;
+}
+
 export function animationTransition(fromAnimation, fromSpeed, toAnimation) {
     toAnimation.reset();
     toAnimation.play();

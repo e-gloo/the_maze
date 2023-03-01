@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { sillyDancingCharacter, getCurrentAnimation, animationTransition, initCharacter, getMixer, getModel, walkingCharacter, idleCharacter, fallingCharacter, setCurrentAnimation, turnRight, turnLeft } from "./animationManager.js";
 import { LEVEL1, LEVEL2 } from '../assets/maps.js';
+import { generateMap } from './mapGenerator.js';
 
 // Set our main variables
 let scene,
@@ -19,13 +20,13 @@ init();
 
 function init() {
     // Set our maze map
-    map = LEVEL2;
+    map = generateMap(1, 1, 30, 30);
     const canvas = document.querySelector("#c");
 
     // Init the scene
     scene = new THREE.Scene();
 
-    // Init the renderer
+    // Init the rendererlenlen
     renderer = new THREE.WebGLRenderer({
         canvas,
         antialias: true,
@@ -94,11 +95,11 @@ function init() {
             }
         }
     }
-    directionalLight.target = targetObject;
-    directionalLight2.target = targetObject;
-    scene.add(directionalLight.target);
-    initCharacter(scene, '../assets/MouseCharacter.glb', { x: 4, y: 4, z: -0.1 }, { x: -Math.PI / 2, y: Math.PI / 2 });
-    document.body.addEventListener("keydown", moveCharacter);
+      directionalLight.target = targetObject;
+      directionalLight2.target = targetObject;
+      scene.add(directionalLight.target);
+      initCharacter(scene, '../assets/MouseCharacter.glb', { x: 1, y: 1, z: -0.1 }, { x: -Math.PI / 2, y: Math.PI / 2 });
+      document.body.addEventListener("keydown", moveCharacter);
 }
 
 const keyToFnMap = new Map();

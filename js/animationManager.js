@@ -81,7 +81,7 @@ export function sillyDancingCharacter() {
     const sillyDancingAnimation = mixer.clipAction(sillyDancingClip);
     sillyDancingAnimation
         .setDuration(20)
-        .setLoop(THREE.LoopOnce)
+        .setLoop(THREE.LoopRepeat)
     return sillyDancingAnimation;
 }
 

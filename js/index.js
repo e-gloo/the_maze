@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { sillyDancingCharacter, getCurrentAnimation, animationTransition, initCharacter, getMixer, getModel, walkingCharacter, idleCharacter, fallingCharacter, setCurrentAnimation, turnRight, turnLeft } from "./animationManager.js";
-import { LEVEL1, LEVEL2 } from '../assets/maps.js';
+//import { LEVEL1, LEVEL2 } from '../assets/maps.js';
 import { generateMap } from './mapGenerator.js';
 
 // Set our main variables
@@ -14,13 +14,32 @@ let scene,
     isRotating = false,
     clock = new THREE.Clock()// Used for anims, which run to a clock instead of frame rate
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+//const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+let endPos;
 init();
 
+
+function setEndSquare(map) {
+    let lastY = map.length - 2;
+    let lastX = map[0].length - 2;
+
+    while (lastY >= 0 && lastX >= 0 && map[lastY][lastX] !== 0) {
+        if (lastY > lastX) {
+            --lastY;
+        } else {
+            --lastX;
+        }
+    }
+    if (lastY >= 0 && lastX >= 0) {
+        map[lastY][lastX] = 2;
+    }
+    return { lastY, lastX };
+}
 function init() {
     // Set our maze map
-    map = generateMap(1, 1, 30, 30);
+    map = generateMap(1, 1, 10, 10);
+    endPos = setEndSquare(map);
     const canvas = document.querySelector("#c");
 
     // Init the scene
@@ -66,8 +85,13 @@ function init() {
     scene.add(directionalLight2);
 
     const planeGeo = new THREE.PlaneGeometry(map.length, map[0].length);
+    const endPlaneGeo = new THREE.PlaneGeometry(1, 1);
     const planeMat = new THREE.MeshBasicMaterial({
         color: 0x048c14,
+        side: THREE.DoubleSide,
+    });
+    const endPlaneMat = new THREE.MeshBasicMaterial({
+        color: 0xb22801,
         side: THREE.DoubleSide,
     });
     const plane = new THREE.Mesh(planeGeo, planeMat);
@@ -75,11 +99,22 @@ function init() {
     plane.position.z = 0;
     plane.position.y = (map.length - 1) / 2;
     plane.position.x = (map[0].length - 1) / 2;
+    const endPlane = new THREE.Mesh(endPlaneGeo, endPlaneMat);
+    scene.add(endPlane);
+    endPlane.position.z = -0.1;
+    endPlane.position.y = endPos.lastY;
+    endPlane.position.x = endPos.lastX;
+
+    const loader = new THREE.CubeTextureLoader();
+    loader.setPath('assets/');
+    const textureCube = loader.load(['box.jpg', 'box.jpg', 'box.jpg', 'box.jpg', 'box.jpg', 'box.jpg'], tex => {
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    });
 
     // Create basic 3D green cube
     const boxGeo = new THREE.BoxGeometry(1, 1, 1);
     //const boxMat = new THREE.MeshBasicMaterial( { color: 0x00aa00, wireframe: true } );
-    const boxMat = new THREE.MeshStandardMaterial({ color: "#6903ad" });
+    const boxMat = new THREE.MeshStandardMaterial({ color: "0xffffff" });
 
     for (let y = 0; y < map.length; ++y) {
         for (let x = 0; x < map[y].length; ++x) {
@@ -95,11 +130,11 @@ function init() {
             }
         }
     }
-      directionalLight.target = targetObject;
-      directionalLight2.target = targetObject;
-      scene.add(directionalLight.target);
-      initCharacter(scene, '../assets/MouseCharacter.glb', { x: 1, y: 1, z: -0.1 }, { x: -Math.PI / 2, y: Math.PI / 2 });
-      document.body.addEventListener("keydown", moveCharacter);
+    directionalLight.target = targetObject;
+    directionalLight2.target = targetObject;
+    scene.add(directionalLight.target);
+    initCharacter(scene, '../assets/MouseCharacter.glb', { x: 1, y: 1, z: -0.1 }, { x: -Math.PI / 2, y: Math.PI / 2 });
+    document.body.addEventListener("keydown", moveCharacter);
 }
 
 const keyToFnMap = new Map();
@@ -251,9 +286,10 @@ function update() {
             if (character.position.x === targetPosition.x && character.position.y === targetPosition.y) {
                 isMoving = false;
                 let nextAnimation;
-                if (targetPosition.x === 8 && targetPosition.y === 6) {
+                if (targetPosition.x === endPos.lastX && targetPosition.y === endPos.lastY) {
                     character.rotation.y = 0;
                     nextAnimation = sillyDancingCharacter();
+                    isDown = true;
                 } else if (shouldFall) {
                     nextAnimation = fallingCharacter();
                     isDown = true

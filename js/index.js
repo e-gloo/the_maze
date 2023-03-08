@@ -1,5 +1,9 @@
 import * as THREE from "three";
-import { sillyDancingCharacter, getCurrentAnimation, animationTransition, initCharacter, getMixer, getModel, walkingCharacter, idleCharacter, fallingCharacter, setCurrentAnimation, turnRight, turnLeft } from "./animationManager.js";
+import {
+    initFlag, sillyDancingCharacter, getCurrentAnimation,
+    animationTransition, initCharacter, getMixer, getModel, walkingCharacter,
+    idleCharacter, fallingCharacter, turnRight, turnLeft
+} from "./animationManager.js";
 //import { LEVEL1, LEVEL2 } from '../assets/maps.js';
 import { generateMap } from './mapGenerator.js';
 
@@ -85,13 +89,8 @@ function init() {
     scene.add(directionalLight2);
 
     const planeGeo = new THREE.PlaneGeometry(map.length, map[0].length);
-    const endPlaneGeo = new THREE.PlaneGeometry(1, 1);
     const planeMat = new THREE.MeshBasicMaterial({
         color: 0x048c14,
-        side: THREE.DoubleSide,
-    });
-    const endPlaneMat = new THREE.MeshBasicMaterial({
-        color: 0xb22801,
         side: THREE.DoubleSide,
     });
     const plane = new THREE.Mesh(planeGeo, planeMat);
@@ -99,22 +98,19 @@ function init() {
     plane.position.z = 0;
     plane.position.y = (map.length - 1) / 2;
     plane.position.x = (map[0].length - 1) / 2;
-    const endPlane = new THREE.Mesh(endPlaneGeo, endPlaneMat);
-    scene.add(endPlane);
-    endPlane.position.z = -0.1;
-    endPlane.position.y = endPos.lastY;
-    endPlane.position.x = endPos.lastX;
 
-    const loader = new THREE.CubeTextureLoader();
-    loader.setPath('assets/');
-    const textureCube = loader.load(['box.jpg', 'box.jpg', 'box.jpg', 'box.jpg', 'box.jpg', 'box.jpg'], tex => {
-        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    });
+    //    const loader = new THREE.CubeTextureLoader();
+    //    loader.setPath('assets/');
+    //    const textureCube = loader.load(['box.jpg', 'box.jpg', 'box.jpg', 'box.jpg', 'box.jpg', 'box.jpg'], tex => {
+    //        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    //    });
+    const loader = new THREE.TextureLoader();
+    const texture = loader.load('assets/box.jpg');
 
     // Create basic 3D green cube
-    const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-    //const boxMat = new THREE.MeshBasicMaterial( { color: 0x00aa00, wireframe: true } );
-    const boxMat = new THREE.MeshStandardMaterial({ color: "0xffffff" });
+    const boxGeo = new THREE.BoxGeometry(1, 1, 0.5);
+    const boxMat = new THREE.MeshBasicMaterial({ map: texture });
+    //const boxMat = new THREE.MeshStandardMaterial({ color: "0xffffff" });
 
     for (let y = 0; y < map.length; ++y) {
         for (let x = 0; x < map[y].length; ++x) {
@@ -127,6 +123,7 @@ function init() {
                 cube.position.x = x;
                 // Y position inverted because positive y goes up on threejs and goes down on out map
                 cube.position.y = y;
+                cube.position.z = -0.25
             }
         }
     }
@@ -134,6 +131,7 @@ function init() {
     directionalLight2.target = targetObject;
     scene.add(directionalLight.target);
     initCharacter(scene, '../assets/MouseCharacter.glb', { x: 1, y: 1, z: -0.1 }, { x: -Math.PI / 2, y: Math.PI / 2 });
+    initFlag(scene, '../assets/flag.glb', { x: endPos.lastX + 0.7, y: endPos.lastY + 0.7, z: -1 }, { x: -Math.PI/2, y: 0, z: 0 });
     document.body.addEventListener("keydown", moveCharacter);
 }
 

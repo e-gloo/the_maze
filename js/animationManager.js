@@ -5,6 +5,27 @@ let mixer, model, fileAnimations;
 var loader = new GLTFLoader();
 let currentAnimation;
 
+export function initFlag(scene, modelPath, position, rotation) {
+    loader.load(
+        modelPath,
+        function(gltf) {
+            const flagModel = gltf.scene;
+            flagModel.scale.set(1, 1, 1);
+            flagModel.position.x = position.x;
+            flagModel.position.y = position.y;
+            flagModel.position.z = position.z;
+
+            flagModel.rotation.x = rotation.x;
+            flagModel.rotation.y = rotation.y;
+            scene.add(flagModel);
+        },
+        undefined,
+        function(error) {
+            console.error(error);
+        }
+    );
+}
+
 export function initCharacter(scene, modelPath, position, rotation) {
     let animation;
     loader.load(
